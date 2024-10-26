@@ -26,12 +26,9 @@ handle_info({tcp_closed, Socket}, State = #state{socket = Socket}) ->
 
 % Reconstructs the data at the application layer.
 % An application logical package is a line terminated by newline.
-%
-% Is it strange that newlines are `\` followed by `n` and
-% not a newline character? Is it not possible to send `\n`
-% in TCP?
 handle_new_data(State = #state{socket = Socket, buffer = Buffer}) ->
-    case binary:split(Buffer, [<<"\\n">>]) of
+    % Note: using echo will send <<"\\n">> here, use printf to get <<"\n">>!
+    case binary:split(Buffer, [<<"\n">>]) of
         [Line, Rest] ->
             gen_tcp:send(Socket, <<Line/binary, "\n">>),
             NewState = State#state{buffer = Rest},
