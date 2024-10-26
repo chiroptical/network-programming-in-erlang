@@ -31,7 +31,13 @@ init([]) ->
         intensity => 0,
         period => 1
     },
-    ChildSpecs = [],
+    ChildSpecs = [
+        #{
+            strategy => one_for_one,
+            id => tcp_echo_server_acceptor_supervisor,
+            start => {tcp_echo_server_acceptor, start_link, [#{port => 4000}]}
+        }
+    ],
     {ok, {SupFlags, ChildSpecs}}.
 
 %% internal functions

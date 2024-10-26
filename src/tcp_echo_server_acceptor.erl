@@ -1,4 +1,4 @@
--module(tcp_echo_server).
+-module(tcp_echo_server_acceptor).
 
 -export([
     start_link/1,
@@ -22,13 +22,23 @@ init(Options) ->
 
     case gen_tcp:listen(Port, ListenOptions) of
         {ok, Socket} ->
-            logger:info(#{started => ?MODULE, listening_on => Port}),
+            logger:notice(#{started => ?MODULE, listening_on => Port}),
             self() ! accept,
             {ok, Socket};
         {error, Reason} ->
             {stop, Reason}
     end.
 
-% TODO: Page 17, handle_info
 handle_info(accept, State) ->
-    {noreply, State}.
+    case gen_tcp:accept(State, 2000) of
+        {ok, Socket} ->
+            {ok, Pid} = tcp_echo_server_connection:start_link(Socket),
+            ok = gen_tcp:controlling_process(Socket, Pid),
+            self() ! accept,
+            {noreply, State};
+        {error, timeout} ->
+            self() ! accept,
+            {noreply, State};
+        {error, Reason} ->
+            {stop, Reason, State}
+    end.
