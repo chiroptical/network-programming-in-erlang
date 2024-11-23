@@ -8,7 +8,7 @@ split(Bin) ->
     split_internal(Bin, <<>>).
 
 split_internal(<<>>, X) ->
-    {X, <<"">>};
+    {X, <<>>};
 split_internal(<<"\n", Rest/binary>>, X) ->
     {X, Rest};
 split_internal(<<X, Rest/binary>>, Y) ->
