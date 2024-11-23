@@ -15,6 +15,7 @@ init(Socket) ->
     {ok, #state{socket = Socket, buffer = <<>>}}.
 
 handle_info({tcp, Socket, Data}, State = #state{socket = Socket, buffer = Buffer}) ->
+    logger:notice(#{data => Data, buffer => Buffer}),
     UpdateBuffer = State#state{buffer = <<Buffer/binary, Data/binary>>},
     NewState = handle_new_data(UpdateBuffer),
     {noreply, NewState};
@@ -28,13 +29,14 @@ handle_info({tcp_closed, Socket}, State = #state{socket = Socket}) ->
 % An application logical package is a line terminated by newline.
 handle_new_data(State = #state{socket = Socket, buffer = Buffer}) ->
     % Note: using echo will send <<"\\n">> here, use printf to get <<"\n">>!
-    case binary:split(Buffer, [<<"\n">>]) of
-        [Line, Rest] ->
+    case split_at_newline:split(Buffer) of
+        {Line, <<>>} ->
+            logger:notice(#{line => Line}),
+            gen_tcp:send(Socket, <<Line/binary, "\n">>),
+            State#state{buffer = <<>>};
+        {Line, Rest} ->
+            logger:notice(#{line => Line, rest => Rest}),
             gen_tcp:send(Socket, <<Line/binary, "\n">>),
             NewState = State#state{buffer = Rest},
-            handle_new_data(NewState);
-        % Either the string is empty or does not contain a newline yet.
-        % This can happen if the OS buffers, e.g. `hello\nwor` and then `ld\n`.
-        _Other ->
-            State
+            handle_new_data(NewState)
     end.
