@@ -1,11 +1,13 @@
 {pkgs, ...}:
 pkgs.mkShell {
-  buildInputs = with pkgs; [
-    # nix tools
-    alejandra
-
-    # erlang stuff
-    erlang_27
-    rebar3
-  ];
+  buildInputs =
+    (with pkgs; [
+      # nix tools
+      alejandra
+    ])
+    ++ (with pkgs.beam.packages.erlang_27; [
+      erlang
+      rebar3
+      erlang-ls
+    ]);
 }
