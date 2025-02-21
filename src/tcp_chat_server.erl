@@ -4,9 +4,11 @@
     infinity_to_hex/0,
     infinity_from_hex/0,
     one/0,
-    message_to_binary/1,
+    register/1,
+    broadcast/2,
     decode_message/1,
-    decode_register/1
+    decode_register/1,
+    decode_broadcast/1
 ]).
 
 infinity_to_hex() ->
@@ -21,26 +23,50 @@ infinity_from_hex() ->
     ToBinary = <<<<(list_to_integer(H, 16))>> || H <- Hex>>,
     io:format("~ts~n", [ToBinary]).
 
--record(register, {username :: nonempty_bitstring()}).
+-record(register, {username :: nonempty_binary()}).
 
-%% -record(broadcast, {from_username :: nonempty_bitstring(), contents :: nonempty_bitstring()}).
+-record(broadcast, {from_username :: nonempty_binary(), message :: nonempty_binary()}).
 
-%% See https://www.erlang.org/doc/system/memory.html, use erlang:system_info(wordsize) to figure
-%% out word size (i.e. small int), constrain the size to < 60 bits (i.e. small int).
-message_to_binary({register, Contents}) ->
-    Bin = list_to_binary(Contents),
-    Size = byte_size(Bin),
-    <<1, Size, Bin/binary>>;
-message_to_binary({broadcast, Username, Message}) ->
+% [1, Size, Username] is an iodata(), which is a linked list of
+% binaries, when shipping this off over gen_tcp the BEAM will
+% automatically deal with this in the C fiddly bits.
+-spec register(Username :: nonempty_binary()) -> iolist().
+register(Username) ->
+    Size = byte_size(Username),
+    [1, Size, Username].
+
+-spec broadcast(Username :: nonempty_binary(), Message :: nonempty_binary()) -> iolist().
+broadcast(Username, Message) ->
     SizeUsername = byte_size(Username),
-    UsernameBin = list_to_binary(Username),
     SizeMessage = byte_size(Message),
-    MessageBin = list_to_binary(Message),
-    <<2, SizeUsername, UsernameBin/binary, SizeMessage, MessageBin/binary>>.
+    [2, SizeUsername, Username, SizeMessage, Message].
 
-decode_message(<<1, Rest/binary>>) ->
-    decode_register(Rest).
+decode_message(<<1, Contents/binary>>) ->
+    decode_register(Contents);
+decode_message(<<2, Contents/binary>>) ->
+    decode_broadcast(Contents);
+decode_message(<<>>) ->
+    incomplete;
+decode_message(<<_Else/binary>>) ->
+    {error, unknown_message}.
 
-% TODO: Take
-decode_register(<<_Length:2, Username/binary>>) ->
-    #register{username = Username}.
+decode_register(<<Size/integer, Message/binary>>) ->
+    maybe
+        <<Username:Size/binary, Continue/binary>> ?= Message,
+        {ok, #register{username = Username}, Continue}
+    else
+        _ ->
+            incomplete
+    end.
+
+decode_broadcast(Contents) ->
+    maybe
+        <<UsernameSize/integer, UsernameAndMessage/binary>> ?= Contents,
+        <<Username:UsernameSize/binary, MessageSize/integer, MessageBin/binary>> ?=
+            UsernameAndMessage,
+        <<Message:MessageSize/binary, Continue/binary>> ?= MessageBin,
+        {ok, #broadcast{from_username = Username, message = Message}, Continue}
+    else
+        _ ->
+            incomplete
+    end.
