@@ -1,4 +1,4 @@
--module(tcp_chat_server).
+-module(chat_protocol).
 
 -export([
     infinity_to_hex/0,

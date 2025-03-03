@@ -11,25 +11,25 @@ all() ->
     ].
 
 register_roundtrips(_Config) ->
-    Message = tcp_chat_server:register(~"chiroptical"),
+    Message = chat_protocol:register(~"chiroptical"),
     {ok, {register, Username}, ~""} =
-        tcp_chat_server:decode_message(erlang:iolist_to_binary(Message)),
+        chat_protocol:decode_message(erlang:iolist_to_binary(Message)),
     ?assertEqual(~"chiroptical", Username).
 
 broadcast_roundtrips(_Config) ->
-    Contents = tcp_chat_server:broadcast(~"chiroptical", ~"hello world"),
+    Contents = chat_protocol:broadcast(~"chiroptical", ~"hello world"),
     {ok, {broadcast, FromUsername, Message}, ~""} =
-        tcp_chat_server:decode_message(erlang:iolist_to_binary(Contents)),
+        chat_protocol:decode_message(erlang:iolist_to_binary(Contents)),
     ?assertEqual(~"chiroptical", FromUsername),
     ?assertEqual(~"hello world", Message).
 
 returns_incomplete(_Config) ->
-    X = tcp_chat_server:decode_message(<<>>),
+    X = chat_protocol:decode_message(<<>>),
     ?assertEqual(incomplete, X).
 
 returns_error(_Config) ->
     Msg = list_to_binary("oh hai"),
-    X = tcp_chat_server:decode_message(<<3, Msg/binary>>),
+    X = chat_protocol:decode_message(<<3, Msg/binary>>),
     ?assertEqual({error, unknown_message}, X).
 
 init_per_suite(Config) ->
