@@ -22,6 +22,9 @@ handle_info({tcp, Socket, Data}, State = #state{socket = Socket, buffer = Buffer
     NewState = State#state{buffer = <<Buffer/binary, Data/binary>>},
     ok = inet:setopts(Socket, [{active, once}]),
     handle_new_data(NewState);
+handle_info({broadcast, UserName, Msg}, State) ->
+    gen_tcp:send(State#state.socket, chat_protocol:broadcast(UserName, Msg)),
+    {noreply, State};
 handle_info(_Msg, State) ->
     {noreply, State}.
 
@@ -49,7 +52,17 @@ handle_new_data(State) ->
     end.
 
 handle_message({register, UserName}, State = #state{user_name = ~""}) ->
+    pg:join(broadcast, self()),
     {ok, State#state{user_name = UserName}};
 handle_message({register, _}, State) ->
     logger:notice(#{invalid_register_message => State#state.user_name}),
-    error.
+    error;
+handle_message({broadcast, UserName, _} = Broadcast, State = #state{user_name = UserName}) ->
+    Processes = pg:get_members(broadcast),
+    lists:foreach(
+        fun(Pid) ->
+            Pid ! Broadcast
+        end,
+        Processes
+    ),
+    {ok, State}.
