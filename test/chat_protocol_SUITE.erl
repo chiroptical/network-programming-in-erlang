@@ -7,7 +7,8 @@ all() ->
         register_roundtrips,
         broadcast_roundtrips,
         returns_incomplete,
-        returns_error
+        returns_error,
+        works
     ].
 
 register_roundtrips(_Config) ->
@@ -31,6 +32,12 @@ returns_error(_Config) ->
     Msg = list_to_binary("oh hai"),
     X = chat_protocol:decode_message(<<3, Msg/binary>>),
     ?assertEqual({error, unknown_message}, X).
+
+works(_Config) ->
+    Msg = <<2, 5, 99, 104, 105, 114, 111, 3, 72, 101, 121>>,
+    {ok, {broadcast, FromUsername, Message}, ~""} = chat_protocol:decode_message(Msg),
+    ?assertEqual(FromUsername, ~"chiro"),
+    ?assertEqual(Message, ~"Hey").
 
 init_per_suite(Config) ->
     Config.

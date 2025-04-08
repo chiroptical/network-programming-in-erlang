@@ -16,6 +16,7 @@ start_link(Socket) ->
     gen_server:start_link(?MODULE, Socket, []).
 
 init(Socket) ->
+    logger:notice(#{started => Socket}),
     {ok, #state{socket = Socket}}.
 
 handle_info({tcp, Socket, Data}, State = #state{socket = Socket, buffer = Buffer}) ->
@@ -23,7 +24,8 @@ handle_info({tcp, Socket, Data}, State = #state{socket = Socket, buffer = Buffer
     ok = inet:setopts(Socket, [{active, once}]),
     handle_new_data(NewState);
 handle_info({broadcast, UserName, Msg}, State) ->
-    gen_tcp:send(State#state.socket, chat_protocol:broadcast(UserName, Msg)),
+    logger:notice(#{sending => broadcast, by => UserName, msg => Msg}),
+    ok = gen_tcp:send(State#state.socket, chat_protocol:broadcast(UserName, Msg)),
     {noreply, State};
 handle_info(_Msg, State) ->
     {noreply, State}.
@@ -52,6 +54,7 @@ handle_new_data(State) ->
     end.
 
 handle_message({register, UserName}, State = #state{user_name = ~""}) ->
+    logger:notice(#{got => register, by => UserName}),
     pg:join(broadcast, self()),
     {ok, State#state{user_name = UserName}};
 handle_message({register, _}, State) ->
@@ -59,6 +62,7 @@ handle_message({register, _}, State) ->
     error;
 handle_message({broadcast, UserName, _} = Broadcast, State = #state{user_name = UserName}) ->
     Processes = pg:get_members(broadcast),
+    logger:notice(#{got => broadcast, by => UserName, procs => Processes}),
     lists:foreach(
         fun(Pid) ->
             Pid ! Broadcast
