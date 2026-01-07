@@ -32,11 +32,11 @@ init([]) ->
         period => 1
     },
     ChildSpecs = [
-        %% #{
-        %%     strategy => one_for_one,
-        %%     id => tcp_echo_server_acceptor_supervisor,
-        %%     start => {tcp_echo_server_acceptor, start_link, [#{port => 4000}]}
-        %% },
+        #{
+            strategy => one_for_one,
+            id => tcp_echo_server_acceptor_supervisor,
+            start => {tcp_echo_server_acceptor, start_link, [#{port => 4000}]}
+        },
         #{
             strategy => one_for_one,
             id => broadcast_registry_pg,

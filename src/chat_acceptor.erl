@@ -1,6 +1,8 @@
 -module(chat_acceptor).
 -behaviour(supervisor).
 
+-include("port.hrl").
+
 -export([
     start_link/0,
     init/1,
@@ -37,7 +39,8 @@ init([]) ->
         #{
             strategy => one_for_one,
             id => tcp_chat_server_acceptor_supervisor,
-            start => {tcp_chat_server_acceptor, start_link, [#{port => 5000, supervisor => self()}]}
+            start =>
+                {tcp_chat_server_acceptor, start_link, [#{port => ?PORT, supervisor => self()}]}
         }
     ],
     {ok, {SupFlags, ChildSpecs}}.

@@ -12,9 +12,9 @@ all() ->
     ].
 
 hello(_Config) ->
-    {H, T} = split_at_newline:split(<<"hello world\nit is me\n">>),
-    ?assert(H == <<"hello world">>),
-    ?assert(T == <<"it is me\n">>).
+    {H, T} = split_at_newline:split(~"hello world\nit is me\n"),
+    ?assert(H == ~"hello world"),
+    ?assert(T == ~"it is me\n").
 
 empty(_Config) ->
     {H, T} = split_at_newline:split(<<>>),
@@ -22,18 +22,18 @@ empty(_Config) ->
     ?assert(T == <<>>).
 
 starts(_Config) ->
-    {H, T} = split_at_newline:split(<<"\nhello">>),
+    {H, T} = split_at_newline:split(~"\nhello"),
     ?assert(H == <<>>),
-    ?assert(T == <<"hello">>).
+    ?assert(T == ~"hello").
 
 ends(_Config) ->
-    {H, T} = split_at_newline:split(<<"hello\n">>),
-    ?assert(H == <<"hello">>),
+    {H, T} = split_at_newline:split(~"hello\n"),
+    ?assert(H == ~"hello"),
     ?assert(T == <<>>).
 
 none(_Config) ->
-    {H, T} = split_at_newline:split(<<"hello">>),
-    ?assert(H == <<"hello">>),
+    {H, T} = split_at_newline:split(~"hello"),
+    ?assert(H == ~"hello"),
     ?assert(T == <<>>).
 
 init_per_suite(Config) ->

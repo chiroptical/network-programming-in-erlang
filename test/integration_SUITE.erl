@@ -11,24 +11,26 @@ all() ->
 
 sends_back_recieved_data(_Config) ->
     {ok, Socket} = gen_tcp:connect("localhost", 4000, [binary, {active, false}]),
-    DataToSend = <<"hello world\n">>,
+    DataToSend = ~"hello world\n",
     ok = gen_tcp:send(Socket, DataToSend),
     {ok, Got} = gen_tcp:recv(Socket, 0, 500),
+    gen_tcp:close(Socket),
     ?assert(Got == DataToSend).
 
 handles_fragmented_data(_Config) ->
     {ok, Socket} = gen_tcp:connect("localhost", 4000, [binary, {active, false}]),
-    ok = gen_tcp:send(Socket, <<"hello">>),
-    ok = gen_tcp:send(Socket, <<" world\nand one more\n">>),
+    ok = gen_tcp:send(Socket, ~"hello"),
+    ok = gen_tcp:send(Socket, ~" world\nand one more\n"),
     {ok, One} = gen_tcp:recv(Socket, 0, 500),
-    ?assert(One == <<"hello world\n">>),
+    ?assert(One == ~"hello world\n"),
     {ok, Two} = gen_tcp:recv(Socket, 0, 500),
-    ?assert(Two == <<"and one more\n">>).
+    gen_tcp:close(Socket),
+    ?assert(Two == ~"and one more\n").
 
 handle_multiple_clients(_Config) ->
     Task = fun() ->
         {ok, Socket} = gen_tcp:connect("localhost", 4000, [binary, {active, false}]),
-        DataToSend = <<"derp\n">>,
+        DataToSend = ~"derp\n",
         ok = gen_tcp:send(Socket, DataToSend),
         {ok, Got} = gen_tcp:recv(Socket, 0, 500),
         ?assert(Got == DataToSend)

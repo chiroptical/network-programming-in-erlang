@@ -1,5 +1,7 @@
 -module(chat_client).
 
+-include("port.hrl").
+
 -export([
     run/0,
     send/2,
@@ -7,7 +9,7 @@
 ]).
 
 run() ->
-    {ok, Socket} = gen_tcp:connect("localhost", 5000, [binary, {active, once}]),
+    {ok, Socket} = gen_tcp:connect("localhost", ?PORT, [binary, {active, once}]),
     UsernameInput = io:get_line("Enter your username: "),
     Username = list_to_binary(string:chomp(UsernameInput)),
     ok = gen_tcp:send(Socket, chat_protocol:register(Username)),
